@@ -124,9 +124,9 @@ class AGVEnv(AGV):
             sort_idx= np.argsort(new_nearest_cars[i])
             sortedList.append(sort_idx)
             list_neighbr.append(sort_idx[1])
-        print(list_neighbr)
+        #print(list_neighbr)
         sortedList = np.reshape(sortedList, (8,8))
-        print(sortedList)
+        #print(sortedList)
 
 
 
@@ -190,16 +190,16 @@ class AGVEnv(AGV):
         ###----------------Calculat positions and channel gains---------------------
       #  speed = random.normal(loc=5, scale=2, size=(self.No_AGV))
         next_state = 0
-        print("grid before")
-        print(self.grid)
-        print(self.grid[0])
-        print("speed before")
-        print(self.speed[0])
+        # print("grid before")
+        # print(self.grid)
+        # print(self.grid[0])
+        # print("speed before")
+        # print(self.speed[0])
         for i in range(self.No_AGV):
             self.move(i)
             #done[i] = True
-        print("grid after")
-        print(self.grid[0])
+        # print("grid after")
+        # print(self.grid[0])
         #self.display()
         self.dist_V2I = [[np.sqrt(
             pow(self.gNB_pos[1] - self.AGVs[j].grid, 2)  ) for j in range(self.No_AGV)] for i in range(self.No_gNB)]
@@ -259,8 +259,8 @@ class AGVEnv(AGV):
         URLLC_Rate = np.zeros((self.No_AGV))
         Error = np.zeros((self.No_AGV))
         Interference = np.zeros((self.No_AGV))
-        print("gv2i")
-        print(P_V2I)
+        # print("gv2i")
+        # print(P_V2I)
         # V2I
         for i in range(self.No_AGV):
             SINR_V2I[i] = P_V2I[0][i]*self.g_V2I[i]
@@ -270,7 +270,7 @@ class AGVEnv(AGV):
                     SINR_V2V[i] = 0
                 else:
                     SINR_V2V[i] = P_V2V[0][i] * self.g_V2V[i][j]
-        print(str(len(SINR_V2V)) + "and v2i is" + str(len((SINR_V2I))))
+        #print(str(len(SINR_V2V)) + "and v2i is" + str(len((SINR_V2I))))
         # SINR_V2I = list(SINR_V2I)
         # SINR_V2V = list(SINR_V2V)
         for i in range(self.No_AGV):
@@ -288,14 +288,14 @@ class AGVEnv(AGV):
             if self.demand == 0:
                 done[i]=True
 
-        print(reward)
+        #print(reward)
 
 
             # print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
             # print('Signal['+str(i) + '] = ' + str((SINR1[i])))
             # print('SINR['+str(i) + '] = ' + str((SINR[i])))
             # print('Interference['+str(i) + '] = ' + str((Interference[i])))
-        print("debug")
+
 
         #      Rate = np.log2(1 + SINR[i])
         #     # print('Rate['+str(i) + '] = ' + str((Rate[i])))

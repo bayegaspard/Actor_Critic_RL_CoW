@@ -145,7 +145,7 @@ def main():
     #env.new_random_game()  # initialize parameters in env
 
     # number of agents
-    num_agents = 4
+    num_agents = 1
     print('Number of agents:', num_agents)
 
     state = env.observation
