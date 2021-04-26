@@ -93,9 +93,7 @@ class AGVEnv(AGV):
         self.AGVs = [AGV(self.X[i]) for i in range(self.No_AGV)]
         self.dist_V2I = [[np.sqrt(pow(self.gNB_pos[0] - self.AGVs[j].grid, 2)) for j in range(self.No_AGV)] ]
 
-        self.dist_V2V = [[np.sqrt(
-            pow(self.AGVs[i].grid - self.AGVs[j].grid, 2)
-            ) for j in range(self.No_AGV)] for i in range(self.No_AGV)]
+        self.dist_V2V = [[np.sqrt(pow(self.AGVs[i].grid - self.AGVs[j].grid, 2))  +0.05for j in range(self.No_AGV)] for i in range(self.No_AGV)]
         self.dist_V2V = np.reshape(self.dist_V2V, (8,8))
         self.g_V2I = [[pow(c / (4 * pi * f_c), 2) * self.dist_V2I[i][j] ** (-alpha) for j in range(self.No_AGV)] for i in
                   range(self.No_gNB)]
@@ -141,9 +139,7 @@ class AGVEnv(AGV):
         self.dist_V2I = [[np.sqrt(
             pow(self.gNB_pos[1] - self.AGVs[j].grid, 2)  ) for j in range(self.No_AGV)] for i in range(self.No_gNB)]
 
-        self.dist_V2V = [[np.sqrt(
-            pow(self.AGVs[i].grid - self.AGVs[j].grid, 2)
-        ) for j in range(self.No_AGV)] for i in range(self.No_AGV)]
+        self.dist_V2V = [[np.sqrt( pow(self.AGVs[i].grid - self.AGVs[j].grid, 2)) + 0.05 for j in range(self.No_AGV)] for i in range(self.No_AGV)]
         #
         self.g_V2I = [[pow(c / (4 * pi * f_c), 2) * self.dist_V2I[i][j] ** (-alpha) for j in range(self.No_AGV)] for i
                       in
@@ -204,9 +200,7 @@ class AGVEnv(AGV):
         self.dist_V2I = [[np.sqrt(
             pow(self.gNB_pos[1] - self.AGVs[j].grid, 2)  ) for j in range(self.No_AGV)] for i in range(self.No_gNB)]
 
-        self.dist_V2V = [[np.sqrt(
-            pow(self.AGVs[i].grid - self.AGVs[j].grid, 2)
-        ) for j in range(self.No_AGV)] for i in range(self.No_AGV)]
+        self.dist_V2V = [[np.sqrt(pow(self.AGVs[i].grid - self.AGVs[j].grid, 2)) + 0.05 for j in range(self.No_AGV)] for i in range(self.No_AGV)]
         #
         self.g_V2I = [[pow(c / (4 * pi * f_c), 2) * self.dist_V2I[i][j] ** (-alpha) for j in range(self.No_AGV)] for i
                       in
