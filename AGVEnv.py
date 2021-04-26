@@ -273,7 +273,8 @@ class AGVEnv(AGV):
         for i in range(Num_AGV):
             if codeword[i]==0:
                 self.demand[i]-=Rate_V2I[i]/1000
-
+                penalty= Rate_V2I[i]-10
+                reward[i] = Rate_V2I[i] - penalty
             else:
                 self.demand[i]-=Rate_V2V[i]/1000
                 reward[i] = Rate_V2V[i]
