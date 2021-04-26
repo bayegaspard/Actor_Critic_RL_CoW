@@ -116,7 +116,7 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
         reward_ep.append(np.mean(running_reward))
         reward_avg.append(np.mean(reward_ep[-500:]))
         plot_durations()
-
+    jaboulouka = input("Press any key to exit")
 
     filename = 'results/DDPG_' + '_Reward' 
     f = open(filename, "w")
@@ -128,7 +128,7 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--num_episodes", type=int, default=25, help="Total number of episodes to train")
+    parser.add_argument("--num_episodes", type=int, default=100, help="Total number of episodes to train")
     parser.add_argument("--max_t", type=int, default=2000, help="Max timestep in a single episode")
     parser.add_argument("--vis", dest="vis", action="store_true", help="Use visdom to visualise training")
     parser.add_argument("--no-vis", dest="vis", action="store_false", help="Do not use visdom to visualise training")
