@@ -31,9 +31,8 @@ IS_TEST = 1-IS_TRAIN
 
 label = 'sarl_model'
 
-n_veh = 4
 n_neighbor = 1
-n_RB = n_veh
+
 
 # Create logger
 logger = logging.getLogger("ddpg_multi")
@@ -104,7 +103,7 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
             actions = agent.act(states)
             next_states1,rewards,dones, rates  = env.step(actions)                # send all actions to UAV environment
             running_reward.append(sum(rates))
-            next_states = [abs(next_states1[i]) for i in range(env.n_Veh)]
+            next_states = [next_states1[i] for i in range(env.No_gNB)]
             agent.step(states, actions, sum(rewards), next_states, all(dones))
             states = next_states                                            # roll over states to next time step
 
@@ -129,7 +128,7 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--num_episodes", type=int, default=500, help="Total number of episodes to train")
+    parser.add_argument("--num_episodes", type=int, default=25, help="Total number of episodes to train")
     parser.add_argument("--max_t", type=int, default=2000, help="Max timestep in a single episode")
     parser.add_argument("--vis", dest="vis", action="store_true", help="Use visdom to visualise training")
     parser.add_argument("--no-vis", dest="vis", action="store_false", help="Do not use visdom to visualise training")
@@ -146,11 +145,11 @@ def main():
     #env.new_random_game()  # initialize parameters in env
 
     # number of agents
-    num_agents = 1
+    num_agents = 4
     print('Number of agents:', num_agents)
 
-    state = env.reset()
-    state_shape = env.No_AGV*env.No_ant
+    state = env.observation
+    state_shape = env.No_AGV*4
     action_size = env.action_space
     agent = MADDPGAgentTrainer(state_shape, action_size, num_agents, random_seed=48, dirname=dirname, print_every=100, model_path=args.model)
 

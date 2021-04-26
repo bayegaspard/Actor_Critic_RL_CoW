@@ -153,8 +153,7 @@ class AGVEnv(AGV):
         self.g_V2V = np.reshape(self.g_V2V, (8,8))
         self.g_V2I = np.reshape(self.g_V2I, (8))
         v2v_nearest = [self.g_V2V[i][j] for i,j in zip(range(len(self.g_V2V)), list_neighbr)]
-        self.observation = [self.g_V2I, v2v_nearest, self.demand, self.individual_time_limit]
-        print(self.observation)
+        self.observation = [np.reshape((self.g_V2I[:], v2v_nearest[:], self.demand[:], self.individual_time_limit[:]), (self.No_AGV*4))]
         return self.observation
 
     def display(self):
@@ -169,20 +168,16 @@ class AGVEnv(AGV):
         cv2.waitKey(int(1000 / SPEED))
 
     def step(self, actions):
-        reward = np.zeros((self.No_AGV))
+        #reward = np.zeros((self.No_AGV))
         penalty = np.zeros((self.No_AGV))
         self.ass = np.zeros(self.No_AGV) # what is self.ass
-        power = np.zeros((1,self.No_AGV))
-        codeword = np.zeros((1,self.No_AGV))
-        for i in range(self.No_AGV):
-            print("tyt")
-            print(actions[0][0][0])
-        power = actions[0][0][0:self.No_AGV]
-        codeword = actions[0][0][self.No_AGV:2 * self.No_AGV]
-
-        P2 = [F.softmax(torch.tensor(power[i]), dim=-1) for i in range(self.No_gNB)]
-        P_V2I = [P2[i].numpy() * P_max for i in range(self.No_gNB)]
-        P_V2V = [P2[i].numpy() * P_max_v2v for i in range(self.No_gNB)]
+        power = np.zeros((self.No_AGV))
+        codeword = np.zeros((self.No_AGV))
+        power[:] = actions[0][0][0:self.No_AGV]
+        codeword[:] = actions[0][0][self.No_AGV:2 * self.No_AGV]
+        P2 = [F.softmax(torch.tensor(power), dim=-1) for i in range(self.No_AGV)]
+        P_V2I = [P2[i].numpy() * P_max for i in range(self.No_AGV)]
+        P_V2V = [P2[i].numpy() * P_max_v2v for i in range(self.No_AGV)]
         for i in range(len(codeword)):
             if codeword[i] > 0.5:
                 codeword[i]=1
@@ -256,44 +251,44 @@ class AGVEnv(AGV):
         #             penalty[j] += P[key][j]
         #             self.ass[key][j] = 1
         ###############################################
-        SINR_V2V = []
-        SINR_V2I = []
-        Rate_V2I = []
-        Rate_V2V = []
-        reward   = []
+        SINR_V2V = np.zeros((self.No_AGV))
+        SINR_V2I = np.zeros((self.No_AGV))
+        Rate_V2I = np.zeros((self.No_AGV))
+        Rate_V2V = np.zeros((self.No_AGV))
+        reward   = np.zeros((self.No_AGV))
         URLLC_Rate = np.zeros((self.No_AGV))
         Error = np.zeros((self.No_AGV))
         Interference = np.zeros((self.No_AGV))
-        self.g_V2I = self.g_V2I.tolist()
-
+        print("gv2i")
+        print(P_V2I)
         # V2I
         for i in range(self.No_AGV):
-            SINR_V2I.append(P_V2I[0]*self.g_V2I[i])
+            SINR_V2I[i] = P_V2I[0][i]*self.g_V2I[i]
         #V2V
             for j in list_neighbr:
                 if self.g_V2V[i][j] == math.inf:
-                    SINR_V2V.append(P_V2V[0]*0)
+                    SINR_V2V[i] = 0
                 else:
-                    SINR_V2V.append(P_V2V[0] * self.g_V2V[i][j])
+                    SINR_V2V[i] = P_V2V[0][i] * self.g_V2V[i][j]
         print(str(len(SINR_V2V)) + "and v2i is" + str(len((SINR_V2I))))
-        SINR_V2I = list(SINR_V2I)
-        SINR_V2V = list(SINR_V2V)
+        # SINR_V2I = list(SINR_V2I)
+        # SINR_V2V = list(SINR_V2V)
         for i in range(self.No_AGV):
-            Rate_V2I.append(np.log2(1 + SINR_V2I[i]/n_0**2))
-            Rate_V2V.append(np.log2(1 + SINR_V2V[i]/n_0**2))
+            Rate_V2I[i]= np.log2(1 + SINR_V2I[i]/n_0**2)
+            Rate_V2V[i] = np.log2(1 + SINR_V2V[i]/n_0**2)
         for i in range(Num_AGV):
             if codeword[i]==0:
                 self.demand[i]-=Rate_V2I[i]/1000
-                reward.append(-1/Rate_V2I[i])
+                reward[i] = Rate_V2I[i]
             else:
                 self.demand[i]-=Rate_V2V[i]/1000
-                reward.append(-1/Rate_V2V[i])
+                reward[i] = Rate_V2V[i]
             self.individual_time_limit[i]-=1
         for i in range(Num_AGV):
             if self.demand == 0:
                 done[i]=True
 
-
+        print(reward)
 
 
             # print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
@@ -317,8 +312,10 @@ class AGVEnv(AGV):
         # # plot_durations_ass(self,self.ass)
         # self.observation = [np.reshape(self.h[i], (self.No_AGV * self.No_ant)) for i in range(self.No_gNB)]
         # next_state = self.observation
-        #
-        # return next_state, reward, done, URLLC_Rate
+        v2v_nearest = [self.g_V2V[i][j] for i, j in zip(range(len(self.g_V2V)), list_neighbr)]
+        self.observation = [np.reshape((self.g_V2I[:], v2v_nearest[:], self.demand[:], self.individual_time_limit[:]), (self.No_AGV*4))]
+        next_state = self.observation
+        return next_state, reward, done, reward
 
 
 # import matplotlib.ticker as mticker
