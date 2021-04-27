@@ -178,7 +178,7 @@ class AGVEnv(AGV):
         P_V2I = [P2[i].numpy() * P_max for i in range(self.No_AGV)]
         P_V2V = [P2[i].numpy() * P_max_v2v for i in range(self.No_AGV)]
         for i in range(len(codeword)):
-            if codeword[i] > 0.5:
+            if codeword[i] < 0.5:
                 codeword[i]=1
             else:
                 codeword[i]=0
