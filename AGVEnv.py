@@ -21,6 +21,9 @@ GRID_WIDTH = 200  # meter
 GRIG_LENGTH = 200  # meter
 P_max_v2v = 5 # Will recheck for max power
 
+min = 0.1
+max = 0.5
+
 Num_AGV = 8
 list_neighbr = []
 duplicate_index = []
@@ -69,7 +72,7 @@ class AGV:
         self.h = [random.randint(30,50) for i in range(Num_AGV)]
         self.rc = [random.randint(20,30) for i in range(Num_AGV)] # in GHz
         self.speed = [random.randint(30,70) for i in range(Num_AGV)]
-        self.demand = [random.randint(1,5) for i in range(Num_AGV)]
+        self.demand = [min + (max-min)*random.random() for i in range(Num_AGV)]
         self.duplicate_index = duplicate_index
         self.individual_time_limit = [random.randint(20,30) for i in range(Num_AGV)]
 
