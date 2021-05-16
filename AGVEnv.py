@@ -322,28 +322,28 @@ class AGVEnv():
                 done[i]=True
                 # End of uplink
                 # Execution step
-                for i in range(len(done)):
-                    count=0
-                    if done[i]==True:
-                        count+=1
-                        if count>1:
-                            if codeword[i] == 0:
-                                l_V2I = (self.AGVs[i].rc*self.AGVs[i].S)/h_v2i
-                                total_delay = t + l_V2I
-                                if total_delay > self.AGVs[i].individual_time_limit:
-                                    penalty = 5
-                                    reward -= penalty
-                                else:
-                                    reward = ....
-
-                            else:
-                                l_v2v = (self.AGVs[i].rc*self.AGVs[i].S)/h_step[self.list_nb[i]]
-                                total_delay = t + l_v2v
-                                if total_delay > self.AGVs[i].individual_time_limit:
-                                    penalty = 5
-                                    reward -= penalty
-                                else:
-                                    reward = ....
+                # for i in range(len(done)):
+                #     count=0
+                #     if done[i]==True:
+                #         count+=1
+                #         if count>1:
+                #             if codeword[i] == 0:
+                #                 l_V2I = (self.AGVs[i].rc*self.AGVs[i].S)/h_v2i
+                #                 total_delay = t + l_V2I
+                #                 if total_delay > self.AGVs[i].individual_time_limit:
+                #                     penalty = 5
+                #                     reward -= penalty
+                #                 else:
+                #                     reward = ....
+                #
+                #             else:
+                #                 l_v2v = (self.AGVs[i].rc*self.AGVs[i].S)/h_step[self.list_nb[i]]
+                #                 total_delay = t + l_v2v
+                #                 if total_delay > self.AGVs[i].individual_time_limit:
+                #                     penalty = 5
+                #                     reward -= penalty
+                #                 else:
+                #                     reward = ....
 
 
         All_time_limit_step = []
