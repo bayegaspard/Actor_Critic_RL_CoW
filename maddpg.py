@@ -136,7 +136,7 @@ class MADDPGAgent(object):
             )
             if eval_mode:
                 logger.info('agent {} set to eval mode')
-                self.actor_local.eval()
+                self.local_actor.eval()
 
         self.noise = OUNoise(
             self.action_size, random_seed, sigma=self.config['SIGMA']
@@ -156,12 +156,18 @@ class MADDPGAgent(object):
         # Run inference in eval mode
         self.local_actor.eval()
         with torch.no_grad():
-            action = self.local_actor(state).cpu().data.numpy()
+            actions1, actions2 = self.local_actor(state).cpu().data.numpy(),self.local_actor(state).cpu().data.numpy()
         self.local_actor.train()
         # add noise if true
         if add_noise:
-            action += self.noise.sample() * noise_weight
-        return np.clip(action, -1, 1)
+            actions1 += self.noise.sample() * noise_weight
+            # print("action1 noise")
+            # print(actions1)
+            actions2 += self.noise.sample() * noise_weight
+        # print("action cliped")
+        # print(actions1)
+        # print(actions2)
+        return np.clip(actions1, -1, 1) , np.clip(actions2, 0, 1)
 
     def reset(self):
         """Resets the noise"""
@@ -177,7 +183,7 @@ class MADDPGAgent(object):
             experience (Tuple[torch.Tensor]):  tuple of (s, a, r, s', done) tuples 
             gamma (float): discount factor
         """
-        num_agents = len(agents)
+        num_agents = 1
         states, actions, rewards, next_states, dones = experience
         # ---------------central critic-------------------
         # use target actor to get action, here we get target actors from 
@@ -185,19 +191,29 @@ class MADDPGAgent(object):
         next_actions = torch.zeros(
             (len(states), num_agents, self.action_size)
         ).to(device)
-        for i, agent in enumerate(agents):            
+        # next_actions = torch.zeros(
+        #     (len(states), self.action_size)
+        # ).to(device)
+        # print("next actions shpe in learn", next_actions.shape)
+        # print("states shape in learn")
+        # print(states.shape)
+        states = states.view(-1,1,32)
+        for i, agent in enumerate(agents):
             next_actions[:, i] = agent.target_actor(states[:, i, :])
 
         # Flatten state and action
         # e.g from state (100,2,24) --> (100, 48)
         critic_states = flatten(next_states)
+        # print("critic states")
+        # print(critic_states.shape)
         next_actions = flatten(next_actions)
+        # print("state states")
+        # print(states.shape)
 
         # calculate target and expected
         Q_targets_next = self.target_critic(critic_states, next_actions)
         Q_targets = rewards[:, self.agent_index, :] + (
-            gamma * Q_targets_next * (1 - dones[:, self.agent_index, :])
-        )
+            gamma * Q_targets_next * (1 - dones[:, self.agent_index, :]))
         Q_expected = self.local_critic(flatten(states), flatten(actions))
 
         # use mse loss 
@@ -349,11 +365,16 @@ class MADDPGAgentTrainer():
             states (list): list of states, one for each agent
             add_noise (bool): whether to apply noise to the actions
         """
-        actions = []
+        actions1 = []
+        actions2 = []
+
         for i, agent in enumerate(self.agents):
-            action = agent.act(states, add_noise)
-            actions.append(action)
-        return actions
+            action1, action2 = agent.act(states, add_noise)
+
+            actions1.append(action1)
+            actions2.append(action2)
+
+        return actions1,actions2
 
     def step(self, states, actions, reward, next_states, done):
         """Performs the learning step.
@@ -365,9 +386,13 @@ class MADDPGAgentTrainer():
         # store a single entry for each step i.e the experience of 
         # each agent for a step gets stored as single entry.
         states = np.expand_dims(states, 0)
+        # actions1 = actions[:32]
+        # actions2 = actions[32:]
         actions = np.expand_dims(
             np.array(actions).reshape(self.num_agents, self.action_size),0)
-        
+        # actions2 = np.expand_dims(
+        #     np.array(actions2).reshape(self.num_agents, self.action_size), 0)
+        # actions = np.concatenate((actions1,actions2))
         rewards = [reward for i in range(self.num_agents)]
         rewards = np.expand_dims(
             np.array(rewards).reshape(self.num_agents, -1),0)
