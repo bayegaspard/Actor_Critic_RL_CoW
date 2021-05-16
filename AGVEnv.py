@@ -29,7 +29,7 @@ duplicate_index = []
 dist_V2V = []
 dist_V2V_step = []
 index_list = []
-global h_v2i
+
 
 
 GRID_SIZE = 10
@@ -134,13 +134,14 @@ class AGVEnv():
         # speed = [1,1,1,1,1,1,1,1]
 
         h = [random.randint(10,80) for i in range(self.No_AGV)]
-        rc = [random.randint(1, 8) for i in range(self.No_AGV)]
+        rc = [random.randint(1, 3) for i in range(self.No_AGV)]
         individual_time = [random.randint(1, 8) for i in range(self.No_AGV)]
         X = [random.randint(1, 10) for i in range(self.No_AGV)]
         speed = [random.randint(1, 5) for i in range(self.No_AGV)]
         demand = [random.randint(1,2) for i in range(self.No_AGV)]
         S = list(demand)
-        h_v2i = sum(S)/Num_AGV
+        global h_v2i
+        h_v2i = sum(h)/Num_AGV
 
         for i in range(Num_AGV):
             self.AGVs = [AGV(X[i],h[i],rc[i],speed[i],demand[i],individual_time[i],S[i]) for i in range(Num_AGV)]
@@ -284,7 +285,10 @@ class AGVEnv():
         SINR_V2I = np.zeros((self.No_AGV))
         Rate_V2I = np.zeros((self.No_AGV))
         Rate_V2V = np.zeros((self.No_AGV))
-        reward   = np.zeros((self.No_AGV))
+        reward_UL   = np.zeros((self.No_AGV))
+        reward_EXE   = np.zeros((self.No_AGV))
+        reward = np.zeros((self.No_AGV))
+
         T_Rate = np.zeros((self.No_AGV))
         Power = np.zeros((self.No_AGV))
         h_step = np.zeros((self.No_AGV))
@@ -304,15 +308,15 @@ class AGVEnv():
 
             if codeword[i]==0:
                 self.AGVs[i].demand-=Rate_V2I[i]
-                penalty = 5
-                reward[i] = Rate_V2I[i] - penalty
+                penalty = 0.5
+                reward_UL[i] = Rate_V2I[i] - penalty
                 Power[i] = 10*np.log10(1000*abs(P_V2I[i]))
                 T_Rate[i] = Rate_V2I[i]
                 self.count_v2i.append(0)
             else :
                 self.AGVs[i].demand-=Rate_V2V[i]
-                h_step[self.list_nb[i]] = self.AGVs[self.list_nb[i]].h - self.AGVs[i].rc
-                reward[i] = Rate_V2V[i]
+                # h_step[self.list_nb[i]] = self.AGVs[self.list_nb[i]].h - self.AGVs[i].rc
+                reward_UL[i] = Rate_V2V[i]
                 Power[i] = 10*np.log10(1000*abs(P_V2V[i]))
                 T_Rate[i] =  Rate_V2V[i]
                 self.count_v2v.append(1)
@@ -322,40 +326,39 @@ class AGVEnv():
                 done[i]=True
                 # End of uplink
                 # Execution step
-                # for i in range(len(done)):
-                #     count=0
-                #     if done[i]==True:
-                #         count+=1
-                #         if count>1:
-                #             if codeword[i] == 0:
-                #                 l_V2I = (self.AGVs[i].rc*self.AGVs[i].S)/h_v2i
-                #                 total_delay = t + l_V2I
-                #                 if total_delay > self.AGVs[i].individual_time_limit:
-                #                     penalty = 5
-                #                     reward -= penalty
-                #                 else:
-                #                     reward = ....
-                #
-                #             else:
-                #                 l_v2v = (self.AGVs[i].rc*self.AGVs[i].S)/h_step[self.list_nb[i]]
-                #                 total_delay = t + l_v2v
-                #                 if total_delay > self.AGVs[i].individual_time_limit:
-                #                     penalty = 5
-                #                     reward -= penalty
-                #                 else:
-                #                     reward = ....
+                if codeword[i] == 0:
+                    l_V2I = (self.AGVs[i].rc * self.AGVs[i].S) / h_v2i
+                    total_delay = t + l_V2I
+                    if total_delay > self.AGVs[i].individual_time_limit:
+                        penalty = -5
+                        reward_EXE[i] =  penalty
+                    else:
+                        reward_EXE[i] = 1 / total_delay
+
+                else:
+                    l_v2v = (self.AGVs[i].rc * self.AGVs[i].S) / self.AGVs[self.list_nb[i]].h
+                    total_delay = t + l_v2v
+                    if total_delay > self.AGVs[i].individual_time_limit:
+                        penalty = -5
+                        reward_EXE[i] =  penalty
+                    else:
+                        reward_EXE[i] = 1 / total_delay
+
+
 
 
         All_time_limit_step = []
         All_demand_step =[]
 
+
         for i in range(Num_AGV):
-            All_time_limit_step.append(self.AGVs[i].individual_time_limit)
+            All_time_limit_step.append(self.AGVs[i].individual_time_limit - t)
             All_demand_step.append(self.AGVs[i].demand)
+            reward[i] = reward_UL[i] + reward_EXE[i]
         self.observation_step = [self.g_V2I_step[:],self.g_V2V_step[:], All_time_limit_step[:], All_demand_step[:]]
         self.observation_step =np.reshape(self.observation,(Num_AGV*4))
         next_state = self.observation_step
-        return next_state, reward, done, T_Rate, Power
+        return next_state, reward, done, T_Rate
 
 def plot_durations_ass(env, ass):
     plt.figure(1)

@@ -126,7 +126,7 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
             actions1 = np.reshape(actions1, (4*env.No_AGV))
             actions2 = np.reshape(actions2, (4 * env.No_AGV))
             actions = np.concatenate((actions1[:2*env.No_AGV],actions2[:2*env.No_AGV]))
-            next_states1,rewards,dones, rates, Power  = env.step(actions,t)                # send all actions to UAV environment
+            next_states1,rewards,dones, rates  = env.step(actions,t)                # send all actions to UAV environment
             running_reward.append(sum(rates))
             new_running_reward.append(sum(rewards))
             next_states = next_states1
