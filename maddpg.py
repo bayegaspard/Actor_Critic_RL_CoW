@@ -167,7 +167,7 @@ class MADDPGAgent(object):
         # print("action cliped")
         # print(actions1)
         # print(actions2)
-        return np.clip(actions1, -1, 1) , np.clip(actions2, 0, 1)
+        return np.clip(actions1, -1, 2) , np.clip(actions2, 0, 1)
 
     def reset(self):
         """Resets the noise"""

@@ -132,6 +132,19 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
             next_states = next_states1
             agent.step(states, actions, sum(rewards), next_states, all(dones))
             states = next_states  # roll over states to next time step
+            if t==4:
+                print("t", t)
+                print("actions1", actions1)
+                print("actions2", actions1)
+            elif t==5 :
+                print("t", t)
+                print("actions1", actions1)
+                print("actions2", actions1)
+            elif t==6:
+                print("t", t)
+                print("actions1", actions1)
+                print("actions2", actions1)
+
             if all(dones):
                 training_step = t
                 break # exit loop if episode finished
@@ -164,8 +177,8 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--num_episodes", type=int, default=1000, help="Total number of episodes to train")
-    parser.add_argument("--max_t", type=int, default=2000, help="Max timestep in a single episode")
+    parser.add_argument("--num_episodes", type=int, default=2000, help="Total number of episodes to train")
+    parser.add_argument("--max_t", type=int, default=1000, help="Max timestep in a single episode")
     parser.add_argument("--vis", dest="vis", action="store_true", help="Use visdom to visualise training")
     parser.add_argument("--no-vis", dest="vis", action="store_false", help="Do not use visdom to visualise training")
     parser.add_argument("--model", type=str, default=None, help="Model checkpoint path, use if you wish to continue training from a checkpoint")
