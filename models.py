@@ -53,14 +53,20 @@ class Actor(nn.Module):
         else:
             x = self.fc1(state)
 
-        x = F.relu(x)
+        # x = F.relu(x)
+        x = F.leaky_relu(x)
         if self.use_bn:
             x = self.bn2(x)
         x = self.fc2(x)
-        x = F.relu(x)
+        # x = F.relu(x)
+        x = F.leaky_relu(x)
         if self.use_bn:
             x = self.bn3(x)
-        return torch.tanh(self.fc3(x))
+        # return torch.tanh(self.fc3(x))
+        # return F.softmax(self.fc3(x))
+        return F.relu(self.fc3(x))
+
+        
 
 
 class Critic(nn.Module):
@@ -112,6 +118,15 @@ class Critic(nn.Module):
         xs = F.relu(x)
         if self.use_bn:
             x = self.bn1(x)
+        # action1 = action[:256]
+        # action2 = action[512:768]
+        # action = torch.cat((action1,action2),dim=0)
+        # print(action[256:768].shape)
+        # print(action.shape)
+        # print(xs.shape)
+        # if len(action) == 1024:
+        #     print(len(action))
+        #     action=action[256:768]
         x = torch.cat((xs, action), dim=1)
         x = self.fc2(x)
         x = F.relu(x)

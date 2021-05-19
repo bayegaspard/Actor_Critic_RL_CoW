@@ -64,8 +64,12 @@ reward_ep = []
 reward_avg = []
 new_reward_ep = []
 new_reward_avg = []
+h_avg_ep = []
+h_avg = []
+power_avg_ep = []
+power_avg = []
 
-def plot_durations():
+def rates_plot_durations():
     h = plt.figure(1)
     plt.clf()
     ax = h.add_subplot(111)
@@ -83,15 +87,47 @@ def plot_durations():
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-def new_plot_durations():
+def latency_plot_durations():
     h = plt.figure(2)
     plt.clf()
     ax = h.add_subplot(111)
     new_durations_reward_avg = torch.FloatTensor(new_reward_avg)
     plt.title('Training DDPG')
     plt.xlabel('Episode')
-    plt.ylabel('Average reward')
+    plt.ylabel('Average latency')
     plt.plot(new_durations_reward_avg.numpy(), label='Rewards')
+    plt.legend(loc='best', prop={'size': 12})
+    formatter = mticker.ScalarFormatter(useMathText=True)
+    formatter.set_powerlimits((-3,2))
+    ax.yaxis.set_major_formatter(formatter)
+    plt.pause(0.001)  # pause a bit so that plots are updated
+
+
+
+def h_plot_durations():
+    h = plt.figure(3)
+    plt.clf()
+    ax = h.add_subplot(111)
+    new_durations_h_avg = torch.FloatTensor(h_avg)
+    plt.title('Training DDPG')
+    plt.xlabel('Episode')
+    plt.ylabel('Average h-decision')
+    plt.plot(new_durations_h_avg.numpy(), label='h-decision')
+    plt.legend(loc='best', prop={'size': 12})
+    formatter = mticker.ScalarFormatter(useMathText=True)
+    formatter.set_powerlimits((-3,2))
+    ax.yaxis.set_major_formatter(formatter)
+    plt.pause(0.001)  # pause a bit so that plots are updated
+
+def power_plot_durations():
+    h = plt.figure(4)
+    plt.clf()
+    ax = h.add_subplot(111)
+    new_durations_h_avg = torch.FloatTensor(power_avg)
+    plt.title('Training DDPG')
+    plt.xlabel('Episode')
+    plt.ylabel('Average power')
+    plt.plot(new_durations_h_avg.numpy(), label='Power')
     plt.legend(loc='best', prop={'size': 12})
     formatter = mticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((-3,2))
@@ -114,8 +150,13 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
     for i_episode in range(1, n_episodes+1):
         running_reward = []
         new_running_reward = []
+        new_running_h = []
+        new_running_power = []
+
+
         states1 = env.reset()
-        states = states1
+        states = [states1[i] for i in range(len(states1))]
+        print("state initial",states)
         agent.reset()
         score = np.zeros(num_agents)
         #action_Alpha = np.zeros(num_agents)
@@ -123,28 +164,18 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
         training_step = 0
         for t in range(max_t):
             actions1,actions2 = agent.act(states)
-            actions1 = np.reshape(actions1, (4*env.No_AGV))
-            actions2 = np.reshape(actions2, (4 * env.No_AGV))
-            actions = np.concatenate((actions1[:2*env.No_AGV],actions2[:2*env.No_AGV]))
-            next_states1,rewards,dones, rates  = env.step(actions,t)                # send all actions to UAV environment
+            # actions1 = np.reshape(actions1, (4*env.No_AGV))
+            # actions2 = np.reshape(actions2, (4 * env.No_AGV))
+            actions = np.concatenate((actions1,actions2))
+            next_states1,rewards,dones, h_dec,power, rates  = env.step(actions,t)                # send all actions to UAV environment
             running_reward.append(sum(rates))
             new_running_reward.append(sum(rewards))
+            new_running_h.append(sum(h_dec))
+            new_running_power.append(sum(power))
             next_states = next_states1
             agent.step(states, actions, sum(rewards), next_states, all(dones))
             states = next_states  # roll over states to next time step
-            if t==4:
-                print("t", t)
-                print("actions1", actions1)
-                print("actions2", actions1)
-            elif t==5 :
-                print("t", t)
-                print("actions1", actions1)
-                print("actions2", actions1)
-            elif t==6:
-                print("t", t)
-                print("actions1", actions1)
-                print("actions2", actions1)
-
+            print("states after",states)
             if all(dones):
                 training_step = t
                 break # exit loop if episode finished
@@ -156,12 +187,21 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
                 i_episode, training_step, np.mean(new_running_reward)))
         print("V2I selection counts : ",len(env.count_v2i))
         print("V2V selection counts : ",len(env.count_v2v))
+        print("Avg h_decisn : ", np.mean(new_running_h))
+        print("Avg power : ", np.mean(new_running_power))
         reward_ep.append(np.mean(running_reward))
         new_reward_ep.append(np.mean(new_running_reward))
+        h_avg_ep.append(np.mean(new_running_h))
+        power_avg_ep.append(np.mean(new_running_power))
         reward_avg.append(np.mean(reward_ep[-500:]))
         new_reward_avg.append(np.mean(new_reward_ep[-500:]))
-        plot_durations()
-        new_plot_durations()
+        h_avg.append(np.mean(h_avg_ep[-100:]))
+        power_avg.append(np.mean(power_avg_ep[-50:]))
+
+        rates_plot_durations()
+        latency_plot_durations()
+        h_plot_durations()
+        power_plot_durations()
     jaboulouka = input("Press any key to exit")
 
     filename = 'results/DDPG_' + '_Reward' 
@@ -177,7 +217,7 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--num_episodes", type=int, default=2000, help="Total number of episodes to train")
+    parser.add_argument("--num_episodes", type=int, default=500, help="Total number of episodes to train")
     parser.add_argument("--max_t", type=int, default=1000, help="Max timestep in a single episode")
     parser.add_argument("--vis", dest="vis", action="store_true", help="Use visdom to visualise training")
     parser.add_argument("--no-vis", dest="vis", action="store_false", help="Do not use visdom to visualise training")

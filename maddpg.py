@@ -156,18 +156,19 @@ class MADDPGAgent(object):
         # Run inference in eval mode
         self.local_actor.eval()
         with torch.no_grad():
-            actions1, actions2 = self.local_actor(state).cpu().data.numpy(),self.local_actor(state).cpu().data.numpy()
+            #actions1, actions2 = self.local_actor(state).cpu().data.numpy(),self.local_actor(state).cpu().data.numpy()
+            actions = self.local_actor(state).cpu().data.numpy()
         self.local_actor.train()
         # add noise if true
         if add_noise:
-            actions1 += self.noise.sample() * noise_weight
+            actions += self.noise.sample() * noise_weight
             # print("action1 noise")
             # print(actions1)
-            actions2 += self.noise.sample() * noise_weight
+            # actions2 += self.noise.sample() * noise_weight
         # print("action cliped")
         # print(actions1)
         # print(actions2)
-        return np.clip(actions1, -1, 2) , np.clip(actions2, 0, 1)
+        return actions[:int(self.action_size/2)] , actions[int(self.action_size/2):]
 
     def reset(self):
         """Resets the noise"""
