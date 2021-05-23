@@ -64,11 +64,15 @@ h_avg_ep = []
 h_avg = []
 power_avg_ep = []
 power_avg = []
+<<<<<<< HEAD
 hv2i_avg = []
 hv2i_ep = []
 adm_ep = []
 
 
+=======
+
+>>>>>>> b2e6cee03363bff3cf77f6cd34ec55f5bb0b5618
 def rates_plot_durations():
     h = plt.figure(1)
     plt.clf()
@@ -102,6 +106,7 @@ def latency_plot_durations():
     ax.yaxis.set_major_formatter(formatter)
     plt.pause(0.001)  # pause a bit so that plots are updated
 
+<<<<<<< HEAD
 def adm_plot_durations():
     h = plt.figure(14)
     plt.clf()
@@ -116,18 +121,28 @@ def adm_plot_durations():
     formatter.set_powerlimits((-3,2))
     ax.yaxis.set_major_formatter(formatter)
     plt.pause(0.001)  # pause a bit so that plots are updated
+=======
+
+>>>>>>> b2e6cee03363bff3cf77f6cd34ec55f5bb0b5618
 
 def h_plot_durations():
     h = plt.figure(3)
     plt.clf()
     ax = h.add_subplot(111)
     new_durations_h_avg = torch.FloatTensor(h_avg)
+<<<<<<< HEAD
     # new_durations_h_v2i = torch.FloatTensor(hv2i_ep)
     plt.title('Training DDPG')
     plt.xlabel('Episode')
     plt.ylabel('Average h-decision')
     plt.plot(new_durations_h_avg.numpy(), label='h')
     # plt.plot(new_durations_h_v2i.numpy(), label='h-V2I')
+=======
+    plt.title('Training DDPG')
+    plt.xlabel('Episode')
+    plt.ylabel('Average h-decision')
+    plt.plot(new_durations_h_avg.numpy(), label='h-decision')
+>>>>>>> b2e6cee03363bff3cf77f6cd34ec55f5bb0b5618
     plt.legend(loc='best', prop={'size': 12})
     formatter = mticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((-3,2))
@@ -167,11 +182,19 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
         new_running_reward = []
         new_running_h = []
         new_running_power = []
+<<<<<<< HEAD
         running_hv2i = []
         running_adm = []
 
         states1, adm_rest = env.reset()
         states = [states1[i] for i in range(len(states1))]
+=======
+
+
+        states1 = env.reset()
+        states = [states1[i] for i in range(len(states1))]
+        print("state initial",states)
+>>>>>>> b2e6cee03363bff3cf77f6cd34ec55f5bb0b5618
         agent.reset()
         score = np.zeros(num_agents)
         #action_Alpha = np.zeros(num_agents)
@@ -179,6 +202,7 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
         training_step = 0
         for t in range(max_t):
             actions1,actions2 = agent.act(states)
+<<<<<<< HEAD
             actions = np.concatenate((actions1,actions2))
             next_states1,rewards,dones, h_all, Power, adm, rates  = env.step(actions,t,adm_rest)                # send all actions to UAV environment
             running_reward.append(np.mean(rates))
@@ -187,10 +211,21 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
             running_adm.append(np.mean(adm))
             new_running_power.append(np.mean(Power))
             # running_hv2i.append(h_v2i)
+=======
+            # actions1 = np.reshape(actions1, (4*env.No_AGV))
+            # actions2 = np.reshape(actions2, (4 * env.No_AGV))
+            actions = np.concatenate((actions1,actions2))
+            next_states1,rewards,dones, h_dec,power, rates  = env.step(actions,t)                # send all actions to UAV environment
+            running_reward.append(sum(rates))
+            new_running_reward.append(sum(rewards))
+            new_running_h.append(sum(h_dec))
+            new_running_power.append(sum(power))
+>>>>>>> b2e6cee03363bff3cf77f6cd34ec55f5bb0b5618
             next_states = next_states1
             print(adm)
             agent.step(states, actions, sum(rewards), next_states, all(dones))
             states = next_states  # roll over states to next time step
+            print("states after",states)
             if all(dones):
                 training_step = t
                 # logs.newLog(np.mean(rates), np.mean(rewards),t)
@@ -206,6 +241,7 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
         print("V2V selection counts : ",len(env.count_v2v))
         print("Avg h_decisn : ", np.mean(new_running_h))
         print("Avg power : ", np.mean(new_running_power))
+<<<<<<< HEAD
         # print("hv2i : ", np.mean(running_hv2i))
         print("adm_mean : ", np.mean(running_adm))
         reward_ep.append(np.mean(running_reward))
@@ -220,11 +256,25 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
         adm_ep.append(np.mean(running_adm))
 
          # plot graphs
+=======
+        reward_ep.append(np.mean(running_reward))
+        new_reward_ep.append(np.mean(new_running_reward))
+        h_avg_ep.append(np.mean(new_running_h))
+        power_avg_ep.append(np.mean(new_running_power))
+        reward_avg.append(np.mean(reward_ep[-500:]))
+        new_reward_avg.append(np.mean(new_reward_ep[-500:]))
+        h_avg.append(np.mean(h_avg_ep[-100:]))
+        power_avg.append(np.mean(power_avg_ep[-50:]))
+
+>>>>>>> b2e6cee03363bff3cf77f6cd34ec55f5bb0b5618
         rates_plot_durations()
         latency_plot_durations()
         h_plot_durations()
         power_plot_durations()
+<<<<<<< HEAD
         adm_plot_durations()
+=======
+>>>>>>> b2e6cee03363bff3cf77f6cd34ec55f5bb0b5618
     jaboulouka = input("Press any key to exit")
 
     filename = 'results/DDPG_' + '_Reward' 
