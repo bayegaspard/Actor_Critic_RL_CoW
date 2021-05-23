@@ -15,6 +15,12 @@ from models import Actor, CentralCritic, Critic
 from utils import save_to_txt, save_to_json, flatten
 from utils import ReplayBuffer, OUNoise
 
+
+
+from logs import Logger
+
+
+logs = Logger(model_name="AC_RL", data_name="Logging")
 # Hyper parameters
 CONFIG = {
     "USE_BATCHNORM": False,      # whether to use batch norm (paper used it to learn across many different games)
@@ -156,18 +162,19 @@ class MADDPGAgent(object):
         # Run inference in eval mode
         self.local_actor.eval()
         with torch.no_grad():
-            actions1, actions2 = self.local_actor(state).cpu().data.numpy(),self.local_actor(state).cpu().data.numpy()
+            #actions1, actions2 = self.local_actor(state).cpu().data.numpy(),self.local_actor(state).cpu().data.numpy()
+            actions = self.local_actor(state).cpu().data.numpy()
         self.local_actor.train()
         # add noise if true
         if add_noise:
-            actions1 += self.noise.sample() * noise_weight
+            actions += self.noise.sample() * noise_weight
             # print("action1 noise")
             # print(actions1)
-            actions2 += self.noise.sample() * noise_weight
+            # actions2 += self.noise.sample() * noise_weight
         # print("action cliped")
         # print(actions1)
         # print(actions2)
-        return np.clip(actions1, -1, 1) , np.clip(actions2, 0, 1)
+        return actions[:int(self.action_size/2)] , actions[int(self.action_size/2):]
 
     def reset(self):
         """Resets the noise"""
@@ -191,12 +198,7 @@ class MADDPGAgent(object):
         next_actions = torch.zeros(
             (len(states), num_agents, self.action_size)
         ).to(device)
-        # next_actions = torch.zeros(
-        #     (len(states), self.action_size)
-        # ).to(device)
-        # print("next actions shpe in learn", next_actions.shape)
-        # print("states shape in learn")
-        # print(states.shape)
+
         states = states.view(-1,1,32)
         for i, agent in enumerate(agents):
             next_actions[:, i] = agent.target_actor(states[:, i, :])
@@ -221,6 +223,7 @@ class MADDPGAgent(object):
         critic_loss_value = critic_loss.item()
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
+
         if self.config['CLIP_GRADS']:
             for param in self.local_critic.parameters():
                 param.grad.data.clamp_(
@@ -270,6 +273,7 @@ class MADDPGAgent(object):
             )
 
         self.learn_step += 1
+
         return actor_loss_value, critic_loss_value
 
 
@@ -405,7 +409,7 @@ class MADDPGAgentTrainer():
         # import pdb; pdb.set_trace()
         self.memory.add(states, actions, rewards, next_states, dones)
 
-    def update(self):
+    def update(self,t):
         """Performs the learning step.
         """
         self.learn_step += 1
@@ -422,7 +426,8 @@ class MADDPGAgentTrainer():
                 self.agents, experiences, self.config['GAMMA'])
             actor_losses.append(actor_loss)
             critic_losses.append(critic_loss)
-        
+            logs.newLog(np.mean(actor_losses), np.mean(critic_losses),t)
+
         # Plot real-time graphs and store losses
         if self.learn_step % self.print_every == 0:
             # Save Critic loss
@@ -435,6 +440,7 @@ class MADDPGAgentTrainer():
                 actor_losses, '{}/actor_losses.txt'.format(self.dirname))
             #self.writer.text('actor loss: {}'.format(actor_losses), "Actor")
             #self.writer.push(actor_losses, "Loss(actor)")
+        return actor_losses, critic_losses
 
     def reset(self):
         """Resets the noise for each agent"""

@@ -11,25 +11,22 @@ from maddpg import MADDPGAgentTrainer
 import AGVEnv
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
-import random
-import math
+from logs import Logger
+
+
+logs = Logger(model_name="AC_RL", data_name="Logging")
+
 
 
 plt.rcParams.update({'font.size': 12})
 
 MINIBATCH_SIZE = 50
 
-
-
 # ################## SETTINGS ######################
 down_lanes = [i/2.0 for i in [4/2,4+4/2,8+4/2,12+4/2,16+4/2,20+4/2]]
-# X = [random.choice(down_lanes)*random.randrange(0)+random.randrange(20) for i in range(AGVEnv.Num_AGV) ] # x-coordinate of all cars
 
 
 Y = 0
-#
-# width = 0
-# height = 2000/20
 
 IS_TRAIN = 1
 IS_TEST = 1-IS_TRAIN
@@ -53,7 +50,6 @@ filehandler = logging.FileHandler(filename='{}/ddpg_multi.log'.format(dirname))
 filehandler.setFormatter(formatter)
 filehandler.setLevel(logging.DEBUG)
 logger.addHandler(filehandler)
-# Uncomment to enable console logger
 steamhandler = logging.StreamHandler()
 steamhandler.setFormatter(formatter)
 steamhandler.setLevel(logging.INFO)
@@ -64,8 +60,16 @@ reward_ep = []
 reward_avg = []
 new_reward_ep = []
 new_reward_avg = []
+h_avg_ep = []
+h_avg = []
+power_avg_ep = []
+power_avg = []
+hv2i_avg = []
+hv2i_ep = []
+adm_ep = []
 
-def plot_durations():
+
+def rates_plot_durations():
     h = plt.figure(1)
     plt.clf()
     ax = h.add_subplot(111)
@@ -83,15 +87,62 @@ def plot_durations():
     plt.pause(0.001)  # pause a bit so that plots are updated
 
 
-def new_plot_durations():
+def latency_plot_durations():
     h = plt.figure(2)
     plt.clf()
     ax = h.add_subplot(111)
     new_durations_reward_avg = torch.FloatTensor(new_reward_avg)
     plt.title('Training DDPG')
     plt.xlabel('Episode')
-    plt.ylabel('Average reward')
+    plt.ylabel('Average latency')
     plt.plot(new_durations_reward_avg.numpy(), label='Rewards')
+    plt.legend(loc='best', prop={'size': 12})
+    formatter = mticker.ScalarFormatter(useMathText=True)
+    formatter.set_powerlimits((-3,2))
+    ax.yaxis.set_major_formatter(formatter)
+    plt.pause(0.001)  # pause a bit so that plots are updated
+
+def adm_plot_durations():
+    h = plt.figure(14)
+    plt.clf()
+    ax = h.add_subplot(111)
+    new_durations_reward_avg = torch.FloatTensor(adm_ep)
+    plt.title('Training DDPG')
+    plt.xlabel('Episode')
+    plt.ylabel('Average adm')
+    plt.plot(new_durations_reward_avg.numpy(), label='adm')
+    plt.legend(loc='best', prop={'size': 12})
+    formatter = mticker.ScalarFormatter(useMathText=True)
+    formatter.set_powerlimits((-3,2))
+    ax.yaxis.set_major_formatter(formatter)
+    plt.pause(0.001)  # pause a bit so that plots are updated
+
+def h_plot_durations():
+    h = plt.figure(3)
+    plt.clf()
+    ax = h.add_subplot(111)
+    new_durations_h_avg = torch.FloatTensor(h_avg)
+    # new_durations_h_v2i = torch.FloatTensor(hv2i_ep)
+    plt.title('Training DDPG')
+    plt.xlabel('Episode')
+    plt.ylabel('Average h-decision')
+    plt.plot(new_durations_h_avg.numpy(), label='h')
+    # plt.plot(new_durations_h_v2i.numpy(), label='h-V2I')
+    plt.legend(loc='best', prop={'size': 12})
+    formatter = mticker.ScalarFormatter(useMathText=True)
+    formatter.set_powerlimits((-3,2))
+    ax.yaxis.set_major_formatter(formatter)
+    plt.pause(0.001)  # pause a bit so that plots are updated
+
+def power_plot_durations():
+    h = plt.figure(4)
+    plt.clf()
+    ax = h.add_subplot(111)
+    new_durations_h_avg = torch.FloatTensor(power_avg)
+    plt.title('Training DDPG')
+    plt.xlabel('Episode')
+    plt.ylabel('Average power')
+    plt.plot(new_durations_h_avg.numpy(), label='Power')
     plt.legend(loc='best', prop={'size': 12})
     formatter = mticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((-3,2))
@@ -114,8 +165,13 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
     for i_episode in range(1, n_episodes+1):
         running_reward = []
         new_running_reward = []
-        states1 = env.reset()
-        states = states1
+        new_running_h = []
+        new_running_power = []
+        running_hv2i = []
+        running_adm = []
+
+        states1, adm_rest = env.reset()
+        states = [states1[i] for i in range(len(states1))]
         agent.reset()
         score = np.zeros(num_agents)
         #action_Alpha = np.zeros(num_agents)
@@ -123,19 +179,24 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
         training_step = 0
         for t in range(max_t):
             actions1,actions2 = agent.act(states)
-            actions1 = np.reshape(actions1, (4*env.No_AGV))
-            actions2 = np.reshape(actions2, (4 * env.No_AGV))
-            actions = np.concatenate((actions1[:2*env.No_AGV],actions2[:2*env.No_AGV]))
-            next_states1,rewards,dones, rates  = env.step(actions,t)                # send all actions to UAV environment
-            running_reward.append(sum(rates))
+            actions = np.concatenate((actions1,actions2))
+            next_states1,rewards,dones, h_all, Power, adm, rates  = env.step(actions,t,adm_rest)                # send all actions to UAV environment
+            running_reward.append(np.mean(rates))
             new_running_reward.append(sum(rewards))
+            new_running_h.append(np.mean(h_all))
+            running_adm.append(np.mean(adm))
+            new_running_power.append(np.mean(Power))
+            # running_hv2i.append(h_v2i)
             next_states = next_states1
+            print(adm)
             agent.step(states, actions, sum(rewards), next_states, all(dones))
             states = next_states  # roll over states to next time step
             if all(dones):
                 training_step = t
+                # logs.newLog(np.mean(rates), np.mean(rewards),t)
                 break # exit loop if episode finished
-        agent.update()
+
+        agent.update(i_episode)
 
         print('Episode {} \t avg length: {} \t T_rates: {}'.format(
                 i_episode, training_step, np.mean(running_reward)))
@@ -143,12 +204,27 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
                 i_episode, training_step, np.mean(new_running_reward)))
         print("V2I selection counts : ",len(env.count_v2i))
         print("V2V selection counts : ",len(env.count_v2v))
+        print("Avg h_decisn : ", np.mean(new_running_h))
+        print("Avg power : ", np.mean(new_running_power))
+        # print("hv2i : ", np.mean(running_hv2i))
+        print("adm_mean : ", np.mean(running_adm))
         reward_ep.append(np.mean(running_reward))
         new_reward_ep.append(np.mean(new_running_reward))
-        reward_avg.append(np.mean(reward_ep[-500:]))
-        new_reward_avg.append(np.mean(new_reward_ep[-500:]))
-        plot_durations()
-        new_plot_durations()
+        # hv2i_ep.append(np.mean(running_hv2i))
+        h_avg_ep.append(np.mean(new_running_h))
+        power_avg_ep.append(np.mean(new_running_power))
+        reward_avg.append(np.mean(reward_ep))
+        new_reward_avg.append(np.mean(new_reward_ep))
+        h_avg.append(np.mean(h_avg_ep))
+        power_avg.append(np.mean(power_avg_ep))
+        adm_ep.append(np.mean(running_adm))
+
+         # plot graphs
+        rates_plot_durations()
+        latency_plot_durations()
+        h_plot_durations()
+        power_plot_durations()
+        adm_plot_durations()
     jaboulouka = input("Press any key to exit")
 
     filename = 'results/DDPG_' + '_Reward' 
@@ -164,8 +240,8 @@ def maddpg(env, num_agents, agent, n_episodes=500, max_t=2000, print_every=50):
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--num_episodes", type=int, default=1000, help="Total number of episodes to train")
-    parser.add_argument("--max_t", type=int, default=2000, help="Max timestep in a single episode")
+    parser.add_argument("--num_episodes", type=int, default=500, help="Total number of episodes to train")
+    parser.add_argument("--max_t", type=int, default=1000, help="Max timestep in a single episode")
     parser.add_argument("--vis", dest="vis", action="store_true", help="Use visdom to visualise training")
     parser.add_argument("--no-vis", dest="vis", action="store_false", help="Do not use visdom to visualise training")
     parser.add_argument("--model", type=str, default=None, help="Model checkpoint path, use if you wish to continue training from a checkpoint")

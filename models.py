@@ -53,14 +53,20 @@ class Actor(nn.Module):
         else:
             x = self.fc1(state)
 
-        x = F.relu(x)
+        # x = F.relu(x)
+        x = F.leaky_relu(x)
         if self.use_bn:
             x = self.bn2(x)
         x = self.fc2(x)
-        x = F.relu(x)
+        # x = F.relu(x)
+        x = F.leaky_relu(x)
         if self.use_bn:
             x = self.bn3(x)
-        return torch.tanh(self.fc3(x))
+        # return torch.tanh(self.fc3(x))
+        # return F.softmax(self.fc3(x))
+        return F.relu(self.fc3(x))
+
+        
 
 
 class Critic(nn.Module):
