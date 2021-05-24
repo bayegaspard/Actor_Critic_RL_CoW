@@ -64,7 +64,9 @@ class Actor(nn.Module):
             x = self.bn3(x)
         # return torch.tanh(self.fc3(x))
         # return F.softmax(self.fc3(x))
-        return F.relu(self.fc3(x))
+        # return F.relu(self.fc3(x))
+        return torch.sigmoid(self.fc3(x))
+
 
         
 
@@ -115,7 +117,7 @@ class Critic(nn.Module):
             action: A float representing the action
         """
         x  = self.fc1(state)
-        xs = F.relu(x)
+        xs = F.leaky_relu(x)
         if self.use_bn:
             x = self.bn1(x)
         # action1 = action[:256]
@@ -129,7 +131,7 @@ class Critic(nn.Module):
         #     action=action[256:768]
         x = torch.cat((xs, action), dim=1)
         x = self.fc2(x)
-        x = F.relu(x)
+        x = F.leaky_relu(x)
         if self.use_bn:
             x = self.bn2(x)
         return self.fc3(x)
@@ -182,12 +184,12 @@ class CentralCritic(nn.Module):
             action: A float representing the action
         """
         x  = self.fc1(state)
-        xs = F.relu(x)
+        xs = F.leaky_relu(x)
         if self.use_bn:
             x = self.bn1(x)
         x = torch.cat((xs, action), dim=1)
         x = self.fc2(x)
-        x = F.relu(x)
+        x = F.leaky_relu(x)
         if self.use_bn:
             x = self.bn2(x)
         return self.fc3(x)        
